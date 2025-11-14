@@ -1,0 +1,9 @@
+LOGGER_FORMAT: '%(asctime)s [%(levelname)s] %(name)s: %(message)s' # if u need a logger
+
+MCP:
+  NAME: 'System Administrator Tools'
+  PATH: '/home/gusti/ASO/ASO-AI/server.py'
+  TRANSPORT_TYPE: 'stdio'
+
+MODEL:
+  NAME: 'llama3.1:8b'

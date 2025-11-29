@@ -37,6 +37,22 @@ def _resolve_requested_path(path_str: str) -> Path:
     return cand
 
 # FastMCP uses asyncio -> good to use async methods
+async def _list_directory(dir_path: str) -> list[str]:
+    """
+    Lists the names of all files and directories in the given directory path.
+    """
+    try:
+        p = _resolve_requested_path(dir_path)
+
+        if not p.is_dir():
+            return [f"Error: Path '{dir_path}' resolved to '{p}' is not a valid directory."]
+            
+        return [item.name for item in p.iterdir()]
+    except ValueError as ve:
+        return [f"Error: {ve}"]
+    except Exception as e:
+        return [f"Error listing directory '{dir_path}': {e}"]
+
 async def _get_file_content(file_path: str) -> str:
     """
     Reads the entire content of the file specified by file_path.
@@ -54,25 +70,27 @@ async def _get_file_content(file_path: str) -> str:
     except Exception as e:
         return f"Error reading file '{file_path}': {e}"
     
-async def _list_directory(dir_path: str) -> list[str]:
+async def _delete_file(file_path: str) -> str:
     """
-    Lists the names of all files and directories in the given directory path.
+    Deletes the specified file.
     """
     try:
-        p = _resolve_requested_path(dir_path)
+        p = _resolve_requested_path(file_path)
 
-        if not p.is_dir():
-            return [f"Error: Path '{dir_path}' resolved to '{p}' is not a valid directory."]
-            
-        return [item.name for item in p.iterdir()]
+        if not p.is_file():
+            return f"Error: Path '{file_path}' resolved to '{p}' which is not a valid file."
+
+        p.unlink()
+        return f"File '{file_path}' successfully deleted."
     except ValueError as ve:
-        return [f"Error: {ve}"]
+        return f"Error: {ve}"
     except Exception as e:
-        return [f"Error listing directory '{dir_path}': {e}"]
+        return f"Error deleting file '{file_path}': {e}"
 
 # register tools (keeps the same tool names)
 get_file_content = mcp.tool()(_get_file_content)
 list_directory = mcp.tool()(_list_directory)
+delete_file = mcp.tool()(_delete_file)
 
 if __name__ == "__main__":
 

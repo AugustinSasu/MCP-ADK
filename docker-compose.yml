@@ -25,11 +25,11 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /home/gusti:/host_home_access:ro
+      - /home/gusti/ASO:/project_folder:rw
     environment:
       - MCP_PORT=8080
-      - MCP_FILE_ROOT=/host_home_access
-      - MCP_MOUNT_SOURCE=/home/gusti 
+      - MCP_FILE_ROOT=/project_folder
+      - MCP_MOUNT_SOURCE=/home/gusti/ASO
     # Ensure it starts before the agent
     depends_on:
       - ollama

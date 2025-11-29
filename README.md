@@ -1,17 +1,13 @@
-## Install the requirements:
+# Build the container (only the first time)
 
-- pip install -r requirements.txt
+- sudo docker compose up --build
 
+# After ADK Web Server start wait for Ollama to pull succesfully!!
 
-## Run the MCP server from the root folder:
+# Access:
 
-- uv run server.py
+- http://localhost:8000
 
-## Run the Agent using ADK web from the root folder:
+# Start the container:
 
-- adk web
-
-
-## Test the agent at:
-
-- http://127.0.0.1:8000
+- sudo docker compose start

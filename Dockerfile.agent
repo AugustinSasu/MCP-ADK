@@ -1,0 +1,18 @@
+# Use a slim Python image
+FROM python:3.12-slim
+
+# Set working directory inside the container
+WORKDIR /app
+
+# Copy requirements file and install dependencies
+# We need ADK, litellm, box, etc.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all project files, including src/, config/, etc.
+COPY . .
+
+# Set the default command to run the ADK agent web interface 
+# from the project root (/app)
+# This will be overridden by the docker-compose file for service linking
+CMD ["adk", "web", "."]

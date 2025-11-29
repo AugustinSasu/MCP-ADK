@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # --- 1. Ollama Service (LLM) ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11435:11434" # Host port 11435 maps to container port 11434
+    volumes:
+      - ollama_data:/root/.ollama # Persist model data
+    environment:
+      # Expose the API to other containers and the host
+      - OLLAMA_HOST=0.0.0.0
+
+    # Command to ensure the model is pulled and serving starts
+    # Change 'llama3.1:8b' if you use a different model
+    entrypoint: ["/bin/sh", "-c", "ollama serve & SERVER_PID=$!; for i in $(seq 1 60); do if curl -sS http://127.0.0.1:11434/v1/models >/dev/null 2>&1; then break; fi; sleep 1; done; ollama pull llama3.1:8b || true; wait $SERVER_PID"]
+  # --- 2. FastMCP Server Service (Tools) ---
+  fastmcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.server # Assuming you name it this, or rename the file above
+    container_name: fastmcp
+    ports:
+      - "8080:8080"
+    volumes:
+      - /home/gusti:/host_home_access:ro
+    environment:
+      - MCP_PORT=8080
+      - MCP_FILE_ROOT=/host_home_access 
+    # Ensure it starts before the agent
+    depends_on:
+      - ollama
+      
+  # --- 3. ADK Agent Service ---
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent # Assuming you name it this
+    container_name: adk_agent
+    ports:
+      - "8000:8000" # ADK web UI usually runs on port 5000
+    environment:
+      # **CRITICAL: Use the service names for cross-container communication**
+      # Ollama URL: service name is 'ollama', port is 11434
+      - OLLAMA_API_BASE=http://ollama:11434
+      # FastMCP URL: service name is 'fastmcp', port is 8080
+      - MCP_SERVER_URL=http://fastmcp:8080/mcp 
+    
+    # Run adk web from the root directory to find the agent in src/
+    command: ["adk", "web", ".", "--host", "0.0.0.0", "--port", "8000"]
+    
+    # Agent depends on both LLM and the Tool Server being ready
+    depends_on:
+      - ollama
+      - fastmcp
+    
+
+volumes:
+  ollama_data: # Define the persistent volume for Ollama

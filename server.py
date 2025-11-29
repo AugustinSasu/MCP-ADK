@@ -52,10 +52,15 @@ async def list_directory(dir_path: str) -> list[str]:
     
 
 if __name__ == "__main__":
+
+    port_string=os.getenv("MCP_PORT", 8080)
+    # os.getenv always returns a string, so we need to convert to int to avoid uvicorn errors: Uvicorn running on %s://%s:%d
+    port = int(port_string)
+
     asyncio.run(
         mcp.run_async(
             transport="http",
             host="0.0.0.0",
-            port=os.getenv("MCP_PORT", 8080),
+            port=port,
         )
     )

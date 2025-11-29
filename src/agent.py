@@ -26,4 +26,3 @@ root_agent = Agent(
         )
     ],
 )
-

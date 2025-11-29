@@ -28,7 +28,8 @@ services:
       - /home/gusti:/host_home_access:ro
     environment:
       - MCP_PORT=8080
-      - MCP_FILE_ROOT=/host_home_access 
+      - MCP_FILE_ROOT=/host_home_access
+      - MCP_MOUNT_SOURCE=/home/gusti 
     # Ensure it starts before the agent
     depends_on:
       - ollama

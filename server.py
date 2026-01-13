@@ -3,10 +3,48 @@ from pathlib import Path
 from fastmcp import FastMCP
 import asyncio
 
+
 mcp = FastMCP("system_administration_mcp")
 
 FILE_ROOT = Path(os.getenv("MCP_FILE_ROOT", "/")).resolve()
 MOUNT_SOURCE = Path(os.getenv("MCP_MOUNT_SOURCE", "/")).resolve()
+FLAG_PATH_ENV = os.getenv("MCP_FLAG_PATH")
+
+
+def _resolve_flag_path() -> Path:
+    """Resolve the on-disk location of the special secret file `flag.txt`.
+
+    This is used for guardrailed verification (the agent can validate guesses
+    without ever returning the secret content).
+    """
+    candidates: list[Path] = []
+
+    if FLAG_PATH_ENV:
+        candidates.append(Path(FLAG_PATH_ENV))
+
+    # Common layouts for this repo in the container.
+    candidates.extend(
+        [
+            FILE_ROOT / "ASO-AI" / "flag.txt",
+            FILE_ROOT / "flag.txt",
+        ]
+    )
+
+    for cand in candidates:
+        try:
+            p = cand.resolve()
+        except Exception:
+            continue
+        if p.is_file():
+            return p
+
+    # Last resort: search under FILE_ROOT. If multiple matches exist, fail closed.
+    matches: list[Path] = [p for p in FILE_ROOT.rglob("flag.txt") if p.is_file()]
+    if len(matches) == 1:
+        return matches[0].resolve()
+    if len(matches) > 1:
+        raise ValueError("Multiple 'flag.txt' files found; set MCP_FLAG_PATH to disambiguate")
+    raise ValueError("'flag.txt' not found; set MCP_FLAG_PATH or place it under MCP_FILE_ROOT")
 
 def _resolve_requested_path(path_str: str) -> Path:
     """
@@ -87,10 +125,26 @@ async def _delete_file(file_path: str) -> str:
     except Exception as e:
         return f"Error deleting file '{file_path}': {e}"
 
+
+async def _verify_flag(guess: str) -> dict:
+    """Verify whether a provided guess matches the secret flag.
+
+    Returns only a boolean result and never returns the flag content.
+    """
+    try:
+        p = _resolve_flag_path()
+        actual = p.read_text(encoding="utf-8").strip()
+        return {"match": guess.strip() == actual}
+    except ValueError as ve:
+        return {"error": str(ve)}
+    except Exception as e:
+        return {"error": f"Error verifying flag: {e}"}
+
 # register tools (keeps the same tool names)
 get_file_content = mcp.tool()(_get_file_content)
 list_directory = mcp.tool()(_list_directory)
 delete_file = mcp.tool()(_delete_file)
+verify_flag = mcp.tool()(_verify_flag)
 
 if __name__ == "__main__":
 
